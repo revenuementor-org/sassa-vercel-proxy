@@ -9,31 +9,35 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
+  let rawBody = '';
+
   try {
-    // Manually parse JSON body
-    const buffers = [];
+    // Manually read body stream
     for await (const chunk of req) {
-      buffers.push(chunk);
+      rawBody += chunk;
     }
-    const rawBody = Buffer.concat(buffers).toString();
-    const { idnumber, mobile } = JSON.parse(rawBody);
+
+    if (!rawBody) {
+      return res.status(400).json({ error: 'Empty request body' });
+    }
+
+    const body = JSON.parse(rawBody);
+    const { idnumber, mobile } = body;
 
     if (!idnumber || !mobile) {
       return res.status(400).json({ error: 'Missing ID number or mobile number' });
     }
 
-    const response = await fetch('https://srd.sassa.gov.za/srdweb/api/web/outcome/', {
+    const sassaResponse = await fetch('https://srd.sassa.gov.za/srdweb/api/web/outcome/', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idnumber, mobile }),
     });
 
-    const data = await response.json();
-    res.status(response.status).json(data);
+    const result = await sassaResponse.json();
+    return res.status(sassaResponse.status).json(result);
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       error: 'Proxy server error',
       details: error.message,
     });
