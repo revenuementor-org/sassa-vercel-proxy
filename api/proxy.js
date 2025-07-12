@@ -1,22 +1,16 @@
+export const config = {
+  api: {
+    bodyParser: true, // Ensure body parsing is enabled
+  },
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  let body = '';
-
   try {
-    // Read the raw body
-    for await (const chunk of req) {
-      body += chunk;
-    }
-
-    if (!body) {
-      return res.status(400).json({ error: 'Empty request body' });
-    }
-
-    const data = JSON.parse(body);
-    const { idnumber, mobile } = data;
+    const { idnumber, mobile } = req.body;
 
     if (!idnumber || !mobile) {
       return res.status(400).json({ error: 'Missing ID number or mobile number' });
